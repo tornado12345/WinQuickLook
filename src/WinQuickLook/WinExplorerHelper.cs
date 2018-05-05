@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -10,17 +9,6 @@ namespace WinQuickLook
 {
     public static class WinExplorerHelper
     {
-        public static void CreateLink(string linkPath)
-        {
-            var shellLink = (IShellLink)Activator.CreateInstance(CLSID.ShellLinkType);
-            var persistFile = shellLink.QueryInterface<IPersistFile>();
-
-            shellLink.SetPath(Assembly.GetEntryAssembly().Location);
-            persistFile.Save(linkPath, true);
-
-            Marshal.FinalReleaseComObject(shellLink);
-        }
-
         public static object GetSizeFormat(long length)
         {
             if (length >= 1024 * 1024 * 1024)
@@ -54,12 +42,9 @@ namespace WinQuickLook
 
             if (IsDesktopWindow(foregroundHwnd))
             {
-                IntPtr desktopHwnd;
-                IWebBrowserApp webBrowserApp;
-
                 var pvarLoc = new object();
 
-                shellWindows.FindWindowSW(ref pvarLoc, ref pvarLoc, ShellWindowTypeConstants.SWC_DESKTOP, out desktopHwnd, ShellWindowFindWindowOptions.SWFO_NEEDDISPATCH, out webBrowserApp);
+                shellWindows.FindWindowSW(ref pvarLoc, ref pvarLoc, ShellWindowTypeConstants.SWC_DESKTOP, out var desktopHwnd, ShellWindowFindWindowOptions.SWFO_NEEDDISPATCH, out var webBrowserApp);
 
                 if (!IsCaretActive(desktopHwnd))
                 {

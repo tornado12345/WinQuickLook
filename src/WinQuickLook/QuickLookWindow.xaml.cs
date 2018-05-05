@@ -39,20 +39,21 @@ namespace WinQuickLook
             new VideoPreviewHandler(),
             new AudioPreviewHandler(),
             new HtmlPreviewHandler(),
+            new SyntaxHighlightPreviewHandler(),
             new TextPreviewHandler(),
             new ComInteropPreviewHandler(),
             new GenericPreviewHandler()
         };
-        
+
         public FrameworkElement PreviewHost
         {
-            get { return (FrameworkElement)GetValue(PreviewHostProperty); }
-            set { SetValue(PreviewHostProperty, value); }
+            get => (FrameworkElement)GetValue(PreviewHostProperty);
+            set => SetValue(PreviewHostProperty, value);
         }
 
         public static readonly DependencyProperty PreviewHostProperty =
             DependencyProperty.Register("PreviewHost", typeof(FrameworkElement), typeof(QuickLookWindow), new PropertyMetadata(null));
-        
+
         public new void Close()
         {
             if (!_isClosed)
@@ -125,9 +126,7 @@ namespace WinQuickLook
         {
             if (IsLoaded)
             {
-                var image = PreviewHost as Image;
-
-                if (image != null && image.StretchDirection != StretchDirection.Both)
+                if (PreviewHost is Image image && image.StretchDirection != StretchDirection.Both)
                 {
                     image.StretchDirection = StretchDirection.Both;
                 }

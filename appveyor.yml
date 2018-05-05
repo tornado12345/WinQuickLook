@@ -1,53 +1,26 @@
-# Notes:
-#   - Minimal appveyor.yml file is an empty file. All sections are optional.
-#   - Indent each level of configuration with 2 spaces. Do not use tabs!
-#   - All section names are case-sensitive.
-#   - Section names should be unique on each level.
+version: '{build}'
 
-#---------------------------------#
-#      general configuration      #
-#---------------------------------#
-
-# version format
-version: 1.1.{build}
-
-# branches to build
 branches:
-  # whitelist
   only:
     - master
 
 skip_tags: true
 
-#---------------------------------#
-#    environment configuration    #
-#---------------------------------#
+skip_commits:
+  message: /\[ci skip\]/
 
-# Operating system (build VM template)
-os: Visual Studio 2015
+image: Visual Studio 2017
 
-# enable patching of AssemblyInfo.* files
-assembly_info:
-  patch: true
-  file: AssemblyInfo.*
-  assembly_version: "{version}"
+init:
+  - git config --global core.autocrlf input
 
-#---------------------------------#
-#       build configuration       #
-#---------------------------------#
-
-# build platform, i.e. x86, x64, Any CPU. This setting is optional.
 platform: Any CPU
 
-# build Configuration, i.e. Debug, Release, etc.
 configuration: Release
 
-#---------------------------------#
-#      artifacts configuration    #
-#---------------------------------#
+before_build:
+  - nuget restore .\src\WinQuickLook.sln
 
-artifacts:
-
-  # pushing a single file with environment variable in path and "Deployment name" specified
-  - path: src\WinQuickLook\bin\$(configuration)
-    name: WinQuickLook
+build:
+  project: .\src\WinQuickLook\WinQuickLook.csproj
+  verbosity: minimal

@@ -10,8 +10,16 @@ WinQuickLook
 
 ## Requirements
 
-- .NET Framework 4.6
+- .NET Framework 4.6.1
 - Windows 10
+
+## Usage
+
+1. Install [latest version](https://www.microsoft.com/store/apps/9njmtkk6jc0q)
+2. Launch WinQuickLook
+3. Open explorer
+4. Select a file
+5. Press a space-key
 
 ## License
 
