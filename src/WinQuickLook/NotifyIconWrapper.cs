@@ -10,6 +10,14 @@ namespace WinQuickLook
         {
             InitializeComponent();
 
+            InitializeContextMenus();
+        }
+
+        private void InitializeContextMenus()
+        {
+            toolStripMenuItem2.Text = Properties.Resources.AutoStartText;
+            toolStripMenuItem1.Text = Properties.Resources.ExitText;
+
             contextMenuStrip1.Opening += async (sender, e) =>
             {
                 var startupTask = await Windows.ApplicationModel.StartupTask.GetAsync("WinQuickLookTask");
@@ -35,13 +43,6 @@ namespace WinQuickLook
                     toolStripMenuItem2.Checked = state == Windows.ApplicationModel.StartupTaskState.Enabled;
                 }
             };
-        }
-
-        public NotifyIconWrapper(IContainer container)
-        {
-            container.Add(this);
-
-            InitializeComponent();
         }
 
         public event EventHandler Click

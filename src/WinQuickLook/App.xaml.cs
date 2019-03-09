@@ -10,7 +10,7 @@ namespace WinQuickLook
         private KeyboardHook _keyboardHook;
         private NotifyIconWrapper _notifyIcon;
 
-        private QuickLookWindow _quickLookWindow;
+        private readonly QuickLookWindow _quickLookWindow = new QuickLookWindow();
 
         private string _currentItem;
 
@@ -28,12 +28,16 @@ namespace WinQuickLook
                 return;
             }
 
-            WebBrowserHelper.SetDocumentMode(11001);
-
             _notifyIcon = new NotifyIconWrapper();
             _notifyIcon.Click += (_, __) => { _quickLookWindow?.Activate(); };
 
-            _keyboardHook = new KeyboardHook(() => Current.Dispatcher.InvokeAsync(PerformQuickLook), () => Current.Dispatcher.InvokeAsync(ChangeQuickLook), () => Current.Dispatcher.InvokeAsync(CancelQuickLook));
+            _keyboardHook = new KeyboardHook(Current.Dispatcher)
+            {
+                PerformAction = PerformQuickLook,
+                ChangeAction = ChangeQuickLook,
+                CancelAction = CancelQuickLook
+            };
+
             _keyboardHook.Start();
         }
 
@@ -47,24 +51,15 @@ namespace WinQuickLook
             _mutex?.ReleaseMutex();
         }
 
-        private void CancelQuickLook()
-        {
-            if (_quickLookWindow?.CloseIfActive() ?? false)
-            {
-                _quickLookWindow = null;
-            }
-        }
-
         private void PerformQuickLook()
         {
             var selectedItem = WinExplorerHelper.GetSelectedItem();
 
             if (selectedItem == null || selectedItem == _currentItem)
             {
-                if (_quickLookWindow?.CloseIfActive() ?? false)
+                if (_quickLookWindow.HideIfVisible())
                 {
                     _currentItem = null;
-                    _quickLookWindow = null;
                 }
 
                 return;
@@ -72,18 +67,13 @@ namespace WinQuickLook
 
             _currentItem = selectedItem;
 
-            _quickLookWindow?.Close();
-            _quickLookWindow = null;
-
-            _quickLookWindow = new QuickLookWindow();
             _quickLookWindow.Open(selectedItem);
-
             _quickLookWindow.Show();
         }
 
         private void ChangeQuickLook()
         {
-            if (_quickLookWindow == null)
+            if (!_quickLookWindow.IsVisible)
             {
                 return;
             }
@@ -97,13 +87,13 @@ namespace WinQuickLook
 
             _currentItem = selectedItem;
 
-            _quickLookWindow?.Close();
-            _quickLookWindow = null;
-
-            _quickLookWindow = new QuickLookWindow();
             _quickLookWindow.Open(selectedItem);
-
             _quickLookWindow.Show();
+        }
+
+        private void CancelQuickLook()
+        {
+            _quickLookWindow.HideIfVisible();
         }
     }
 }

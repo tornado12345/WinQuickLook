@@ -3,11 +3,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms.Integration;
 using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 using WinQuickLook.Handlers;
@@ -20,27 +20,22 @@ namespace WinQuickLook
         public QuickLookWindow()
         {
             InitializeComponent();
-
-            open.Click += (sender, e) =>
-            {
-                Process.Start(_fileInfo.FullName);
-
-                Close();
-            };
         }
 
         private FileInfo _fileInfo;
         private IQuickLookPreviewHandler _handler;
-        private bool _isClosed;
 
         private static readonly IQuickLookPreviewHandler[] _handlers =
         {
-            new ImagePreviewHandler(),
-            new VideoPreviewHandler(),
-            new AudioPreviewHandler(),
-            new HtmlPreviewHandler(),
             new SyntaxHighlightPreviewHandler(),
             new TextPreviewHandler(),
+            new HtmlPreviewHandler(),
+            new InternetShortcutPreviewHandler(),
+            new PdfPreviewHandler(),
+            new VideoPreviewHandler(),
+            new AudioPreviewHandler(),
+            new AnimatedGifPreviewHandler(),
+            new ImagePreviewHandler(),
             new ComInteropPreviewHandler(),
             new GenericPreviewHandler()
         };
@@ -52,32 +47,26 @@ namespace WinQuickLook
         }
 
         public static readonly DependencyProperty PreviewHostProperty =
-            DependencyProperty.Register("PreviewHost", typeof(FrameworkElement), typeof(QuickLookWindow), new PropertyMetadata(null));
+            DependencyProperty.Register(nameof(PreviewHost), typeof(FrameworkElement), typeof(QuickLookWindow), new PropertyMetadata(null));
 
-        public new void Close()
+        public bool HideIfVisible()
         {
-            if (!_isClosed)
-            {
-                _isClosed = true;
-
-                base.Close();
-            }
-        }
-
-        public bool CloseIfActive()
-        {
-            if (!IsActive)
+            if (!IsVisible)
             {
                 return false;
             }
 
-            Close();
+            Hide();
+
+            CleanupHost();
 
             return true;
         }
 
         public void Open(string fileName)
         {
+            CleanupHost();
+
             _handler = _handlers.First(x => x.CanOpen(fileName));
 
             var element = _handler.GetElement(fileName);
@@ -93,14 +82,19 @@ namespace WinQuickLook
                 element.Height = double.NaN;
             }
 
+            Left = (SystemParameters.WorkArea.Width - Width) / 2;
+            Top = (SystemParameters.WorkArea.Height - Height) / 2;
+
             _fileInfo = new FileInfo(fileName);
+
+            SetAssocName(fileName);
         }
 
         public new void Show()
         {
-            if (PreviewHost is Image)
+            if (PreviewHost is Image image)
             {
-                var bitmap = (BitmapSource)((Image)PreviewHost).Source;
+                var bitmap = (BitmapSource)image.Source;
 
                 Title = $"{_fileInfo.Name} ({bitmap.PixelWidth}x{bitmap.PixelHeight} - {WinExplorerHelper.GetSizeFormat(_fileInfo.Length)})";
             }
@@ -109,46 +103,69 @@ namespace WinQuickLook
                 Title = _fileInfo.Name;
             }
 
+            Topmost = true;
+
             base.Show();
 
             Topmost = false;
         }
 
+        private void CleanupHost()
+        {
+            if (PreviewHost is WindowsFormsHost formsHost)
+            {
+                formsHost.Child.Dispose();
+                formsHost.Child = null;
+
+                formsHost.Dispose();
+            }
+
+            PreviewHost = null;
+        }
+
         private void Window_SourceInitialized(object sender, EventArgs e)
         {
-            if (_handler.AllowsTransparency)
-            {
-                SetBlurEffect();
-            }
+            SetBlurEffect();
         }
 
         private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (IsLoaded)
+            if (PreviewHost is Image image && image.StretchDirection != StretchDirection.Both)
             {
-                if (PreviewHost is Image image && image.StretchDirection != StretchDirection.Both)
-                {
-                    image.StretchDirection = StretchDirection.Both;
-                }
+                image.StretchDirection = StretchDirection.Both;
             }
         }
 
         private void Window_Unloaded(object sender, RoutedEventArgs e)
         {
-            (PreviewHost as WindowsFormsHost)?.Child.Dispose();
-            PreviewHost = null;
+            CleanupHost();
+        }
+
+        private void OpenButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(_fileInfo.FullName);
+
+                Close();
+            }
+            catch
+            {
+                MessageBox.Show(Properties.Resources.OpenButtonErrorMessage, "WinQuickLook");
+            }
         }
 
         private void SetBlurEffect()
         {
-            Background = new SolidColorBrush(Color.FromArgb(0x90, 0xFF, 0xFF, 0xFF));
             WindowStyle = WindowStyle.None;
 
             var interopHelper = new WindowInteropHelper(this);
 
             var accentPolicy = new ACCENTPOLICY
             {
-                nAccentState = 3
+                nAccentState = 3,
+                nFlags = 2,
+                nColor = 0x90FFFFFF
             };
 
             var accentPolicySize = Marshal.SizeOf(accentPolicy);
@@ -166,6 +183,26 @@ namespace WinQuickLook
             NativeMethods.SetWindowCompositionAttribute(interopHelper.Handle, ref winCompatData);
 
             Marshal.FreeHGlobal(accentPolicyPtr);
+        }
+
+        private void SetAssocName(string fileName)
+        {
+            int pcchOut = 0;
+
+            NativeMethods.AssocQueryString(ASSOCF.INIT_IGNOREUNKNOWN, ASSOCSTR.FRIENDLYAPPNAME, Path.GetExtension(fileName), null, null, ref pcchOut);
+
+            if (pcchOut == 0)
+            {
+                open.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var pszOut = new StringBuilder(pcchOut);
+
+            NativeMethods.AssocQueryString(ASSOCF.INIT_IGNOREUNKNOWN, ASSOCSTR.FRIENDLYAPPNAME, Path.GetExtension(fileName), null, pszOut, ref pcchOut);
+
+            open.Content = string.Format(Properties.Resources.OpenButtonText, pszOut);
+            open.Visibility = Visibility.Visible;
         }
     }
 }
