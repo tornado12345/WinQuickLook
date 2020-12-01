@@ -1,15 +1,16 @@
-WinQuickLook
+WinQuickLook <img align="right" src="https://raw.githubusercontent.com/shibayan/WinQuickLook/master/WinQuickLook.Package/Assets/Square44x44Logo.scale-200.png">
 ================
 
-[![Build status](https://ci.appveyor.com/api/projects/status/8ct3i49pyfs7puy8?svg=true)](https://ci.appveyor.com/project/shibayan/winquicklook)
+![Build](https://github.com/shibayan/WinQuickLook/workflows/Build/badge.svg)
 [![License](https://img.shields.io/github/license/shibayan/WinQuickLook.svg)](https://github.com/shibayan/WinQuickLook/blob/master/LICENSE)
 
 "Quick Look" like Windows Explorer file viewer.
 
+<a href="https://www.microsoft.com/store/apps/9njmtkk6jc0q?cid=storebadge&ocid=badge"><img src="https://developer.microsoft.com/en-us/store/badges/images/English_get-it-from-MS.png" alt="Download now" width="284"/></a>
+
 ## Requirements
 
-- .NET Framework 4.6.1
-- Windows 10
+- Windows 10 Version 1903 or later
 
 ## Usage
 
